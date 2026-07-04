@@ -25,7 +25,9 @@ RUN apk upgrade --no-cache \
     git
 
 WORKDIR /src
+COPY build/trippy-maxminddb-0.29.patch /tmp/trippy-maxminddb-0.29.patch
 RUN git clone --depth 1 --branch "${TRIPPY_VERSION}" https://github.com/fujiapple852/trippy.git . \
+    && git apply /tmp/trippy-maxminddb-0.29.patch \
     && sed -i 's/maxminddb = "0.25.0"/maxminddb = "0.29.0"/' Cargo.toml \
     && cargo update -p rand@0.9.1 --precise 0.9.4 \
     && cargo update -p maxminddb --precise 0.29.0 \
