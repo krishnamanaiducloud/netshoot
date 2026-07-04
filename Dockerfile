@@ -5,7 +5,7 @@ FROM ${GO_IMAGE} AS fetcher
 COPY build/fetch_binaries.sh /tmp/fetch_binaries.sh
 
 RUN apk upgrade --no-cache \
-  && apk add --no-cache \
+  && apk add --upgrade --no-cache \
     bash \
     ca-certificates \
     curl \
@@ -23,7 +23,7 @@ ARG POWERLEVEL10K_COMMIT=9253fb1c5034410c43a0c681ff8294181c54016c
 
 RUN set -ex \
     && apk upgrade --no-cache \
-    && apk add --no-cache \
+    && apk add --upgrade --no-cache \
     apache2-utils \
     bash \
     bind-tools \
@@ -79,7 +79,7 @@ RUN set -ex \
     websocat \
     perl-crypt-ssleay \
     perl-net-ssleay \
-    && apk add --no-cache \
+    && apk add --upgrade --no-cache \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
