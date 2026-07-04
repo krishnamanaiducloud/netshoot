@@ -31,7 +31,6 @@ RUN set -ex \
     bridge-utils \
     busybox-extras \
     conntrack-tools \
-    ctop \
     curl \
     dhcping \
     drill \
@@ -70,7 +69,6 @@ RUN set -ex \
     strace \
     tcpdump \
     tcptraceroute \
-    termshark \
     tshark \
     util-linux \
     vim \
@@ -86,8 +84,14 @@ RUN set -ex \
       swaks \
       trippy
 
+# Installing ctop
+COPY --from=fetcher /tmp/ctop /usr/local/bin/ctop
+
 # Installing calicoctl
 COPY --from=fetcher /tmp/calicoctl /usr/local/bin/calicoctl
+
+# Installing termshark
+COPY --from=fetcher /tmp/termshark /usr/local/bin/termshark
 
 # Installing grpcurl
 COPY --from=fetcher /tmp/grpcurl /usr/local/bin/grpcurl
