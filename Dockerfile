@@ -27,7 +27,7 @@ RUN apk upgrade --no-cache \
 WORKDIR /src
 RUN git clone --depth 1 --branch "${TRIPPY_VERSION}" https://github.com/fujiapple852/trippy.git . \
     && sed -i 's/maxminddb = "0.25.0"/maxminddb = "0.29.0"/' Cargo.toml \
-    && cargo update -p rand --precise 0.9.4 \
+    && cargo update -p rand@0.9.1 --precise 0.9.4 \
     && cargo update -p maxminddb --precise 0.29.0 \
     && cargo build --release --bin trip
 
