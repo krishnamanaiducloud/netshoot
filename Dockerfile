@@ -1,6 +1,7 @@
 ARG ALPINE_VERSION=3.24.1
+ARG GO_IMAGE=golang:1.26.4-alpine3.24
 
-FROM alpine:${ALPINE_VERSION} AS fetcher
+FROM ${GO_IMAGE} AS fetcher
 COPY build/fetch_binaries.sh /tmp/fetch_binaries.sh
 
 RUN apk upgrade --no-cache \
@@ -8,6 +9,7 @@ RUN apk upgrade --no-cache \
     bash \
     ca-certificates \
     curl \
+    git \
     tar \
     wget
 
@@ -29,6 +31,7 @@ RUN set -ex \
     bridge-utils \
     busybox-extras \
     conntrack-tools \
+    ctop \
     curl \
     dhcping \
     drill \
@@ -67,6 +70,7 @@ RUN set -ex \
     strace \
     tcpdump \
     tcptraceroute \
+    termshark \
     tshark \
     util-linux \
     vim \
@@ -82,14 +86,8 @@ RUN set -ex \
       swaks \
       trippy
 
-# Installing ctop - top-like container monitor
-COPY --from=fetcher /tmp/ctop /usr/local/bin/ctop
-
 # Installing calicoctl
 COPY --from=fetcher /tmp/calicoctl /usr/local/bin/calicoctl
-
-# Installing termshark
-COPY --from=fetcher /tmp/termshark /usr/local/bin/termshark
 
 # Installing grpcurl
 COPY --from=fetcher /tmp/grpcurl /usr/local/bin/grpcurl
