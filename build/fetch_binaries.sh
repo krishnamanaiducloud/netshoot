@@ -28,9 +28,10 @@ get_grpcurl() {
     cd /tmp/grpcurl-src
     go get -u=patch ./cmd/grpcurl
     go mod edit \
-      -require=google.golang.org/grpc@v1.79.3 \
+      -require=google.golang.org/grpc@v1.82.0 \
       -require=google.golang.org/protobuf@v1.36.11 \
       -require=github.com/go-jose/go-jose/v4@v4.1.4 \
+      -require=golang.org/x/crypto@v0.53.0 \
       -require=golang.org/x/net@v0.56.0 \
       -require=golang.org/x/sys@v0.46.0 \
       -require=golang.org/x/text@v0.38.0

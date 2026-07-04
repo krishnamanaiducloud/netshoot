@@ -1,5 +1,6 @@
 ARG ALPINE_VERSION=3.24.1
 ARG GO_IMAGE=golang:1.26.4-alpine3.24
+ARG RUST_IMAGE=rust:1.96.1-alpine3.24
 
 FROM ${GO_IMAGE} AS fetcher
 COPY build/fetch_binaries.sh /tmp/fetch_binaries.sh
@@ -14,6 +15,21 @@ RUN apk upgrade --no-cache \
     wget
 
 RUN /tmp/fetch_binaries.sh
+
+FROM ${RUST_IMAGE} AS trippy-builder
+ARG TRIPPY_VERSION=0.13.0
+
+RUN apk upgrade --no-cache \
+  && apk add --upgrade --no-cache \
+    build-base \
+    git
+
+WORKDIR /src
+RUN git clone --depth 1 --branch "${TRIPPY_VERSION}" https://github.com/fujiapple852/trippy.git . \
+    && sed -i 's/maxminddb = "0.25.0"/maxminddb = "0.29.0"/' Cargo.toml \
+    && cargo update -p rand --precise 0.9.4 \
+    && cargo update -p maxminddb --precise 0.29.0 \
+    && cargo build --release --bin trip
 
 FROM alpine:${ALPINE_VERSION}
 
@@ -83,8 +99,11 @@ RUN set -ex \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
-      swaks \
-      trippy
+      swaks
+
+# Installing trippy
+COPY --from=trippy-builder /src/target/release/trip /usr/local/bin/trip
+RUN ln -s /usr/local/bin/trip /usr/local/bin/trippy
 
 # Installing calicoctl
 COPY --from=fetcher /tmp/calicoctl /usr/local/bin/calicoctl
