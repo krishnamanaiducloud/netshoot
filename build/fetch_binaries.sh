@@ -29,6 +29,7 @@ get_grpcurl() {
     go mod edit \
       -require=google.golang.org/grpc@v1.79.3 \
       -require=google.golang.org/protobuf@v1.36.11 \
+      -require=github.com/go-jose/go-jose/v4@v4.1.4 \
       -require=golang.org/x/net@v0.56.0 \
       -require=golang.org/x/sys@v0.46.0 \
       -require=golang.org/x/text@v0.38.0
@@ -41,7 +42,13 @@ get_grpcurl() {
 
 get_fortio() {
   VERSION=${FORTIO_VERSION#v}
-  CGO_ENABLED=0 GOBIN=/tmp go install -trimpath -ldflags="-s -w -buildid=" "fortio.org/fortio@v${VERSION}"
+  git clone --depth 1 --branch "v${VERSION}" https://github.com/fortio/fortio.git /tmp/fortio-src
+  (
+    cd /tmp/fortio-src
+    go mod edit -require=golang.org/x/image@v0.43.0
+    go mod download
+    CGO_ENABLED=0 go build -mod=mod -trimpath -ldflags="-s -w -buildid=" -o /tmp/fortio .
+  )
   chmod +x /tmp/fortio
   chown root:root /tmp/fortio
 }
