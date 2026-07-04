@@ -1,20 +1,26 @@
-FROM debian:stable-slim AS fetcher
+ARG ALPINE_VERSION=3.24.1
+
+FROM alpine:${ALPINE_VERSION} AS fetcher
 COPY build/fetch_binaries.sh /tmp/fetch_binaries.sh
 
-RUN apt-get update && apt-get install -y \
-  curl \
-  wget
+RUN apk upgrade --no-cache \
+  && apk add --no-cache \
+    bash \
+    ca-certificates \
+    curl \
+    tar \
+    wget
 
 RUN /tmp/fetch_binaries.sh
 
-FROM alpine:3.24.1
+FROM alpine:${ALPINE_VERSION}
+
+ARG OH_MY_ZSH_COMMIT=ff2f16e8df7386d7198009566aef09cbbc0c8212
+ARG ZSH_AUTOSUGGESTIONS_COMMIT=85919cd1ffa7d2d5412f6d3fe437ebdbeeec4fc5
+ARG POWERLEVEL10K_COMMIT=9253fb1c5034410c43a0c681ff8294181c54016c
 
 RUN set -ex \
-    && echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories \
-    && echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories \
-    && echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
-    && apk update \
-    && apk upgrade \
+    && apk upgrade --no-cache \
     && apk add --no-cache \
     apache2-utils \
     bash \
@@ -58,20 +64,23 @@ RUN set -ex \
     socat \
     speedtest-cli \
     openssh \
-    oh-my-zsh \
     strace \
     tcpdump \
     tcptraceroute \
-    trippy \
     tshark \
     util-linux \
     vim \
     git \
     zsh \
     websocat \
-    swaks \
     perl-crypt-ssleay \
-    perl-net-ssleay
+    perl-net-ssleay \
+    && apk add --no-cache \
+      --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
+      --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
+      --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
+      swaks \
+      trippy
 
 # Installing ctop - top-like container monitor
 COPY --from=fetcher /tmp/ctop /usr/local/bin/ctop
@@ -94,15 +103,32 @@ WORKDIR /root
 ENV HOSTNAME=netshoot
 
 # ZSH Themes
-RUN curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh | sh
-RUN git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-RUN git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
+RUN set -eux; \
+    git init /root/.oh-my-zsh; \
+    cd /root/.oh-my-zsh; \
+    git remote add origin https://github.com/ohmyzsh/ohmyzsh.git; \
+    git fetch --depth=1 origin "${OH_MY_ZSH_COMMIT}"; \
+    git checkout --detach FETCH_HEAD; \
+    rm -rf .git; \
+    git init /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions; \
+    cd /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions; \
+    git remote add origin https://github.com/zsh-users/zsh-autosuggestions.git; \
+    git fetch --depth=1 origin "${ZSH_AUTOSUGGESTIONS_COMMIT}"; \
+    git checkout --detach FETCH_HEAD; \
+    rm -rf .git; \
+    git init /root/.oh-my-zsh/custom/themes/powerlevel10k; \
+    cd /root/.oh-my-zsh/custom/themes/powerlevel10k; \
+    git remote add origin https://github.com/romkatv/powerlevel10k.git; \
+    git fetch --depth=1 origin "${POWERLEVEL10K_COMMIT}"; \
+    git checkout --detach FETCH_HEAD; \
+    rm -rf .git
 COPY zshrc .zshrc
 COPY motd motd
 
 # Fix permissions for OpenShift and tshark
-RUN chmod -R g=u /root
-RUN chown root:root /usr/bin/dumpcap
+RUN chmod -R g=u /root \
+    && chown root:root /usr/bin/dumpcap \
+    && rm -rf /var/cache/apk/* /tmp/*
 
 # Running ZSH
 CMD ["zsh"]

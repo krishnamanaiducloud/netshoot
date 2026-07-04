@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-get_latest_release() {
-  curl --silent "https://api.github.com/repos/$1/releases/latest" | # Get latest release from GitHub api
-    grep '"tag_name":' |                                            # Get tag line
-    sed -E 's/.*"([^"]+)".*/\1/'                                    # Pluck JSON value
-}
-
+CTOP_VERSION="${CTOP_VERSION:-0.7.7}"
+CALICOCTL_VERSION="${CALICOCTL_VERSION:-v3.32.1}"
+TERMSHARK_VERSION="${TERMSHARK_VERSION:-2.4.0}"
+GRPCURL_VERSION="${GRPCURL_VERSION:-1.9.3}"
+FORTIO_VERSION="${FORTIO_VERSION:-1.75.2}"
 
 ARCH=$(uname -m)
 case $ARCH in
@@ -19,13 +18,13 @@ case $ARCH in
 esac
 
 get_ctop() {
-  VERSION=$(get_latest_release bcicen/ctop | sed -e 's/^v//')
+  VERSION=${CTOP_VERSION#v}
   LINK="https://github.com/bcicen/ctop/releases/download/v${VERSION}/ctop-${VERSION}-linux-${ARCH}"
   wget "$LINK" -O /tmp/ctop && chmod +x /tmp/ctop
 }
 
 get_calicoctl() {
-  VERSION=$(get_latest_release projectcalico/calico)
+  VERSION=$CALICOCTL_VERSION
   LINK="https://github.com/projectcalico/calico/releases/download/${VERSION}/calicoctl-linux-${ARCH}"
   wget "$LINK" -O /tmp/calicoctl && chmod +x /tmp/calicoctl
 }
@@ -33,7 +32,7 @@ get_calicoctl() {
 get_termshark() {
   case "$ARCH" in
     *)
-      VERSION=$(get_latest_release gcla/termshark | sed -e 's/^v//')
+      VERSION=${TERMSHARK_VERSION#v}
       if [ "$ARCH" == "amd64" ]; then
         TERM_ARCH=x64
       else
@@ -54,7 +53,7 @@ get_grpcurl() {
   else
     TERM_ARCH="$ARCH"
   fi
-  VERSION=$(get_latest_release fullstorydev/grpcurl | sed -e 's/^v//')
+  VERSION=${GRPCURL_VERSION#v}
   LINK="https://github.com/fullstorydev/grpcurl/releases/download/v${VERSION}/grpcurl_${VERSION}_linux_${TERM_ARCH}.tar.gz"
   wget "$LINK" -O /tmp/grpcurl.tar.gz  && \
   tar --no-same-owner -zxvf /tmp/grpcurl.tar.gz && \
@@ -69,7 +68,7 @@ get_fortio() {
   else
     TERM_ARCH="$ARCH"
   fi
-  VERSION=$(get_latest_release fortio/fortio | sed -e 's/^v//')
+  VERSION=${FORTIO_VERSION#v}
   LINK="https://github.com/fortio/fortio/releases/download/v${VERSION}/fortio-linux_${ARCH}-${VERSION}.tgz"
   wget "$LINK" -O /tmp/fortio.tgz  && \
   tar -zxvf /tmp/fortio.tgz && \
