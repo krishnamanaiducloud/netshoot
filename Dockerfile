@@ -141,7 +141,17 @@ RUN set -eux; \
     git remote add origin https://github.com/romkatv/powerlevel10k.git; \
     git fetch --depth=1 origin "${POWERLEVEL10K_COMMIT}"; \
     git checkout --detach FETCH_HEAD; \
-    rm -rf .git
+    rm -rf .git; \
+    for plugin in /root/.oh-my-zsh/plugins/*; do \
+      case "$(basename "$plugin")" in \
+        docker|git|jsontools|macports|node|sudo|web-search|yarn) ;; \
+        *) rm -rf "$plugin" ;; \
+      esac; \
+    done; \
+    rm -rf \
+      /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions/Gemfile.lock \
+      /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions/spec \
+      /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions/test
 COPY zshrc .zshrc
 COPY motd motd
 

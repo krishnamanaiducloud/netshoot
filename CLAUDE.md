@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project is
 
-`netshoot` is a Docker image packed with networking troubleshooting tools for debugging Docker and Kubernetes network issues. The image is built on Alpine Linux and ships ~40 apk packages plus 5 pre-built binaries fetched at build time (ctop, calicoctl, termshark, grpcurl, fortio).
+`netshoot` is a Docker image packed with networking troubleshooting tools for debugging Docker and Kubernetes network issues. The image is built on Alpine Linux and ships ~40 apk packages plus source-built/fetched binaries assembled at build time (calicoctl, termshark, grpcurl, fortio, trippy).
 
 ## Build commands
 
@@ -33,7 +33,7 @@ There are no unit tests. CI (`test-pr-buildx.yml`) validates PRs by doing a mult
 
 The Dockerfile uses a two-stage build:
 
-1. **`fetcher` stage** (debian:stable-slim) — runs `build/fetch_binaries.sh`, which queries GitHub Releases API for the latest versions of ctop, calicoctl, termshark, grpcurl, and fortio, then downloads and unpacks them into `/tmp/`.
+1. **`fetcher` stage** (Go on Alpine) — runs `build/fetch_binaries.sh`, which downloads calicoctl and source-builds patched Go binaries for termshark, grpcurl, and fortio into `/tmp/`.
 
 2. **Final stage** (alpine:3.x) — installs all apk packages, copies binaries from the fetcher stage, clones oh-my-zsh + powerlevel10k, and copies `zshrc` and `motd` into the image. Default CMD is `zsh`.
 

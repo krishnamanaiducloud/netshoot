@@ -261,17 +261,6 @@ swaks \
 
 ---
 
-### Container and network performance overview
-
-```bash
-# Top-like view of container CPU, memory, net, and I/O
-docker run -it --rm \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  nicolaka/netshoot ctop
-```
-
----
-
 ## Included Tools
 
 ### Network analysis
@@ -340,7 +329,6 @@ docker run -it --rm \
 | Tool | Purpose |
 |---|---|
 | `calicoctl` | Calico resource management |
-| `ctop` | Container metrics TUI |
 
 ### Debug & tracing
 | Tool | Purpose |
