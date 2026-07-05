@@ -4,6 +4,7 @@ set -euo pipefail
 CALICOCTL_VERSION="${CALICOCTL_VERSION:-v3.32.1}"
 GRPCURL_VERSION="${GRPCURL_VERSION:-1.9.3}"
 FORTIO_VERSION="${FORTIO_VERSION:-1.75.2}"
+TERMSHARK_VERSION="${TERMSHARK_VERSION:-2.4.0}"
 
 export GOPROXY="${GOPROXY:-https://proxy.golang.org|direct}"
 export GOSUMDB="${GOSUMDB:-sum.golang.org}"
@@ -85,8 +86,31 @@ get_fortio() {
   chown root:root /tmp/fortio
 }
 
+get_termshark() {
+  VERSION=${TERMSHARK_VERSION#v}
+  retry clone_repo https://github.com/gcla/termshark.git "v${VERSION}" /tmp/termshark-src
+  (
+    cd /tmp/termshark-src
+    retry go get -u=patch ./cmd/termshark
+    go mod edit \
+      -require=github.com/antchfx/xmlquery@v1.5.1 \
+      -require=github.com/antchfx/xpath@v1.3.6 \
+      -require=github.com/sirupsen/logrus@v1.9.4 \
+      -require=golang.org/x/crypto@v0.53.0 \
+      -require=golang.org/x/net@v0.56.0 \
+      -require=golang.org/x/sys@v0.46.0 \
+      -require=golang.org/x/text@v0.38.0 \
+      -require=gopkg.in/yaml.v3@v3.0.1
+    retry go mod download
+    retry env CGO_ENABLED=0 go build -mod=mod -trimpath -ldflags="-s -w -buildid=" -o /tmp/termshark ./cmd/termshark
+  )
+  chmod +x /tmp/termshark
+  chown root:root /tmp/termshark
+}
+
 
 get_calicoctl
 get_grpcurl
 get_fortio
+get_termshark
 

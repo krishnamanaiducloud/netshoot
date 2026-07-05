@@ -49,7 +49,6 @@ RUN set -ex \
     bridge-utils \
     busybox-extras \
     conntrack-tools \
-    ctop \
     curl \
     dhcping \
     drill \
@@ -88,7 +87,6 @@ RUN set -ex \
     strace \
     tcpdump \
     tcptraceroute \
-    termshark \
     tshark \
     util-linux \
     vim \
@@ -115,6 +113,9 @@ COPY --from=fetcher /tmp/grpcurl /usr/local/bin/grpcurl
 
 # Installing fortio
 COPY --from=fetcher /tmp/fortio /usr/local/bin/fortio
+
+# Installing termshark
+COPY --from=fetcher /tmp/termshark /usr/local/bin/termshark
 
 # Setting User and Home
 USER root
