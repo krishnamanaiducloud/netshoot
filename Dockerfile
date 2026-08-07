@@ -13,7 +13,6 @@ RUN apk upgrade --no-cache \
     ca-certificates \
     curl \
     git \
-    tar \
     wget
 
 RUN /tmp/fetch_binaries.sh
