@@ -1,8 +1,9 @@
 ARG ALPINE_IMAGE=alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
-ARG GO_IMAGE=golang:1.26.5-alpine3.24@sha256:0178a641fbb4858c5f1b48e34bdaabe0350a330a1b1149aabd498d0699ff5fb2
-ARG RUST_IMAGE=rust:1.96.1-alpine3.24@sha256:a41f7740f8b45d45795624eec13a8b42263cc700f19f7e4e86e04d3dda08a479
+ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev
+ARG RUST_IMAGE=cgr.dev/chainguard/rust:latest-dev
 
 FROM ${GO_IMAGE} AS fetcher
+USER root
 COPY build/fetch_binaries.sh /tmp/fetch_binaries.sh
 RUN sed -i 's/\r$//' /tmp/fetch_binaries.sh
 
@@ -19,6 +20,8 @@ RUN /tmp/fetch_binaries.sh
 
 FROM ${RUST_IMAGE} AS trippy-builder
 ARG TRIPPY_VERSION=0.13.0
+
+USER root
 
 RUN apk upgrade --no-cache \
   && apk add --upgrade --no-cache \
