@@ -1,9 +1,10 @@
-ARG ALPINE_VERSION=3.24.1
-ARG GO_IMAGE=golang:1.26.4-alpine3.24
-ARG RUST_IMAGE=rust:1.96.1-alpine3.24
+ARG ALPINE_IMAGE=alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
+ARG GO_IMAGE=golang:1.26.5-alpine3.24@sha256:0178a641fbb4858c5f1b48e34bdaabe0350a330a1b1149aabd498d0699ff5fb2
+ARG RUST_IMAGE=rust:1.96.1-alpine3.24@sha256:a41f7740f8b45d45795624eec13a8b42263cc700f19f7e4e86e04d3dda08a479
 
 FROM ${GO_IMAGE} AS fetcher
 COPY build/fetch_binaries.sh /tmp/fetch_binaries.sh
+RUN sed -i 's/\r$//' /tmp/fetch_binaries.sh
 
 RUN apk upgrade --no-cache \
   && apk add --upgrade --no-cache \
@@ -26,14 +27,21 @@ RUN apk upgrade --no-cache \
 
 WORKDIR /src
 COPY build/trippy-maxminddb-0.29.patch /tmp/trippy-maxminddb-0.29.patch
-RUN git clone --depth 1 --branch "${TRIPPY_VERSION}" https://github.com/fujiapple852/trippy.git . \
+RUN --mount=type=cache,id=netshoot-cargo-registry,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,id=netshoot-cargo-git,target=/usr/local/cargo/git,sharing=locked \
+    --mount=type=cache,id=netshoot-trippy-target,target=/src/target,sharing=locked \
+    git init . \
+    && git remote add origin https://github.com/fujiapple852/trippy.git \
+    && git fetch --depth 1 origin "refs/tags/${TRIPPY_VERSION}" \
+    && git checkout --detach FETCH_HEAD \
     && git apply /tmp/trippy-maxminddb-0.29.patch \
     && sed -i 's/maxminddb = "0.25.0"/maxminddb = "0.29.0"/' Cargo.toml \
     && cargo update -p rand@0.9.1 --precise 0.9.4 \
     && cargo update -p maxminddb --precise 0.29.0 \
-    && cargo build --release --bin trip
+    && cargo build --release --bin trip \
+    && install -Dm755 target/release/trip /out/trip
 
-FROM alpine:${ALPINE_VERSION}
+FROM ${ALPINE_IMAGE}
 
 ARG OH_MY_ZSH_COMMIT=ff2f16e8df7386d7198009566aef09cbbc0c8212
 ARG ZSH_AUTOSUGGESTIONS_COMMIT=85919cd1ffa7d2d5412f6d3fe437ebdbeeec4fc5
@@ -99,10 +107,14 @@ RUN set -ex \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
+      apache2-utils \
+      bind-tools \
+      c-ares \
+      libssh \
       swaks
 
 # Installing trippy
-COPY --from=trippy-builder /src/target/release/trip /usr/local/bin/trip
+COPY --from=trippy-builder /out/trip /usr/local/bin/trip
 RUN ln -s /usr/local/bin/trip /usr/local/bin/trippy
 
 # Installing calicoctl
