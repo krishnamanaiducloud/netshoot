@@ -1,6 +1,5 @@
 ARG ALPINE_IMAGE=alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
 ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:acd5088274d279f3343deff04b61ccf040327272e81eaeb33f4ccb0753d9a1c9
-ARG RUST_IMAGE=cgr.dev/chainguard/rust:latest-dev@sha256:04ff740c14814353701c10bec4e79bac5d94f10c3e54369e2688bfaf54662092
 
 FROM ${GO_IMAGE} AS fetcher
 USER root
@@ -15,31 +14,6 @@ RUN apk add --upgrade --no-cache \
     wget
 
 RUN /tmp/fetch_binaries.sh
-
-FROM ${RUST_IMAGE} AS trippy-builder
-ARG TRIPPY_VERSION=0.13.0
-
-USER root
-
-RUN apk add --upgrade --no-cache \
-    build-base \
-    git
-
-WORKDIR /src
-COPY build/trippy-maxminddb-0.29.patch /tmp/trippy-maxminddb-0.29.patch
-RUN --mount=type=cache,id=netshoot-cargo-registry,target=/usr/local/cargo/registry,sharing=locked \
-    --mount=type=cache,id=netshoot-cargo-git,target=/usr/local/cargo/git,sharing=locked \
-    --mount=type=cache,id=netshoot-trippy-target,target=/src/target,sharing=locked \
-    git init . \
-    && git remote add origin https://github.com/fujiapple852/trippy.git \
-    && git fetch --depth 1 origin "refs/tags/${TRIPPY_VERSION}" \
-    && git checkout --detach FETCH_HEAD \
-    && git apply /tmp/trippy-maxminddb-0.29.patch \
-    && sed -i 's/maxminddb = "0.25.0"/maxminddb = "0.29.0"/' Cargo.toml \
-    && cargo update -p rand@0.9.1 --precise 0.9.4 \
-    && cargo update -p maxminddb --precise 0.29.0 \
-    && cargo build --release --bin trip \
-    && install -Dm755 target/release/trip /out/trip
 
 FROM ${ALPINE_IMAGE}
 
@@ -112,21 +86,11 @@ RUN set -ex \
       libssh \
       swaks
 
-# Installing trippy
-COPY --from=trippy-builder /out/trip /usr/local/bin/trip
-RUN ln -s /usr/local/bin/trip /usr/local/bin/trippy
-
-# Installing calicoctl
-COPY --from=fetcher /tmp/calicoctl /usr/local/bin/calicoctl
-
 # Installing grpcurl
 COPY --from=fetcher /tmp/grpcurl /usr/local/bin/grpcurl
 
 # Installing fortio
 COPY --from=fetcher /tmp/fortio /usr/local/bin/fortio
-
-# Installing termshark
-COPY --from=fetcher /tmp/termshark /usr/local/bin/termshark
 
 # Setting User and Home
 USER root
