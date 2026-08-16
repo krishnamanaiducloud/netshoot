@@ -55,7 +55,10 @@ get_calicoctl() {
       -require=google.golang.org/grpc@v1.82.1 \
       -require=golang.org/x/text@v0.39.0
     retry go mod download
-    retry env CGO_ENABLED=0 go build -mod=mod -trimpath -ldflags="-s -w -buildid=" -o /tmp/calicoctl ./calicoctl/calicoctl
+    # Dependency refreshes intentionally dirty the tagged checkout. Disable VCS
+    # stamping so scanners do not mistake the resulting pseudo-version for an
+    # ancient Calico release; the application version remains CALICOCTL_VERSION.
+    retry env CGO_ENABLED=0 go build -mod=mod -buildvcs=false -trimpath -ldflags="-s -w -buildid=" -o /tmp/calicoctl ./calicoctl/calicoctl
   )
   chmod +x /tmp/calicoctl
   chown root:root /tmp/calicoctl

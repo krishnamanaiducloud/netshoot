@@ -1,14 +1,13 @@
 ARG ALPINE_IMAGE=alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
-ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev
-ARG RUST_IMAGE=cgr.dev/chainguard/rust:latest-dev
+ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:acd5088274d279f3343deff04b61ccf040327272e81eaeb33f4ccb0753d9a1c9
+ARG RUST_IMAGE=cgr.dev/chainguard/rust:latest-dev@sha256:04ff740c14814353701c10bec4e79bac5d94f10c3e54369e2688bfaf54662092
 
 FROM ${GO_IMAGE} AS fetcher
 USER root
 COPY build/fetch_binaries.sh /tmp/fetch_binaries.sh
 RUN sed -i 's/\r$//' /tmp/fetch_binaries.sh
 
-RUN apk upgrade --no-cache \
-  && apk add --upgrade --no-cache \
+RUN apk add --upgrade --no-cache \
     bash \
     ca-certificates \
     curl \
@@ -22,8 +21,7 @@ ARG TRIPPY_VERSION=0.13.0
 
 USER root
 
-RUN apk upgrade --no-cache \
-  && apk add --upgrade --no-cache \
+RUN apk add --upgrade --no-cache \
     build-base \
     git
 
@@ -45,12 +43,11 @@ RUN --mount=type=cache,id=netshoot-cargo-registry,target=/usr/local/cargo/regist
 
 FROM ${ALPINE_IMAGE}
 
-ARG OH_MY_ZSH_COMMIT=ff2f16e8df7386d7198009566aef09cbbc0c8212
+ARG OH_MY_ZSH_COMMIT=b54a71977574cfcf659cc2f15a5e6422f17a8da7
 ARG ZSH_AUTOSUGGESTIONS_COMMIT=85919cd1ffa7d2d5412f6d3fe437ebdbeeec4fc5
-ARG POWERLEVEL10K_COMMIT=9253fb1c5034410c43a0c681ff8294181c54016c
+ARG POWERLEVEL10K_COMMIT=3308262dfbd743b6e1d3956a2b5572f7a049d692
 
 RUN set -ex \
-    && apk upgrade --no-cache \
     && apk add --upgrade --no-cache \
     apache2-utils \
     bash \
