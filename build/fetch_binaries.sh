@@ -50,10 +50,10 @@ get_grpcurl() {
     cd /tmp/grpcurl-src
     retry go get -u=patch ./cmd/grpcurl
     go mod edit \
-      -require=google.golang.org/grpc@v1.82.1 \
+      -require=google.golang.org/grpc@v1.83.1 \
       -require=google.golang.org/protobuf@v1.36.11 \
       -require=github.com/go-jose/go-jose/v4@v4.1.4 \
-      -require=golang.org/x/crypto@v0.53.0 \
+      -require=golang.org/x/crypto@v0.56.0 \
       -require=golang.org/x/net@v0.56.0 \
       -require=golang.org/x/sys@v0.46.0 \
       -require=golang.org/x/text@v0.39.0
@@ -72,7 +72,8 @@ get_fortio() {
     retry go get -u=patch .
     go mod edit \
       -require=golang.org/x/image@v0.45.0 \
-      -require=google.golang.org/grpc@v1.82.1 \
+      -require=golang.org/x/crypto@v0.56.0 \
+      -require=google.golang.org/grpc@v1.83.1 \
       -require=golang.org/x/text@v0.39.0
     retry go mod download
     retry env CGO_ENABLED=0 go build -mod=mod -trimpath -ldflags="-s -w -buildid=" -o /tmp/fortio .
