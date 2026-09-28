@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-GRPCURL_VERSION="${GRPCURL_VERSION:-1.9.3}"
-FORTIO_VERSION="${FORTIO_VERSION:-1.75.2}"
+GRPCURL_VERSION="${GRPCURL_VERSION:-1.9.4}"
+FORTIO_VERSION="${FORTIO_VERSION:-1.75.3}"
 
 export GOPROXY="${GOPROXY:-https://proxy.golang.org|direct}"
 export GOSUMDB="${GOSUMDB:-sum.golang.org}"
@@ -16,7 +16,6 @@ retry() {
     if [ "$count" -ge "$attempts" ]; then
       return 1
     fi
-
     echo "Command failed. Retrying in ${delay}s: $*" >&2
     sleep "$delay"
     count=$((count + 1))
@@ -30,25 +29,21 @@ clone_repo() {
   dest=$3
 
   rm -rf "$dest"
-  git clone --depth 1 --branch "$tag" "$repo" "$dest"
+  timeout 180 git \
+    -c http.lowSpeedLimit=1024 \
+    -c http.lowSpeedTime=60 \
+    clone --depth 1 --branch "$tag" "$repo" "$dest"
 }
 
-ARCH=$(uname -m)
-case $ARCH in
-    x86_64)
-        ARCH=amd64
-        ;;
-    aarch64)
-        ARCH=arm64
-        ;;
-esac
+build_grpcurl() {
+  retry clone_repo \
+    https://github.com/fullstorydev/grpcurl.git \
+    "v${GRPCURL_VERSION#v}" \
+    /tmp/grpcurl-src
 
-get_grpcurl() {
-  VERSION=${GRPCURL_VERSION#v}
-  retry clone_repo https://github.com/fullstorydev/grpcurl.git "v${VERSION}" /tmp/grpcurl-src
   (
     cd /tmp/grpcurl-src
-    retry go get -u=patch ./cmd/grpcurl
+    retry timeout 600 go get -u=patch ./cmd/grpcurl
     go mod edit \
       -require=google.golang.org/grpc@v1.83.2 \
       -require=google.golang.org/protobuf@v1.36.12 \
@@ -57,31 +52,37 @@ get_grpcurl() {
       -require=golang.org/x/net@v0.59.0 \
       -require=golang.org/x/sys@v0.48.0 \
       -require=golang.org/x/text@v0.42.0
-    retry go mod download
-    retry env CGO_ENABLED=0 go build -mod=mod -trimpath -ldflags="-s -w -buildid=" -o /tmp/grpcurl ./cmd/grpcurl
+    retry timeout 600 go mod download
+    retry timeout 600 env CGO_ENABLED=0 go build \
+      -mod=mod -trimpath \
+      -ldflags="-s -w -buildid= -X main.version=${GRPCURL_VERSION#v}" \
+      -o /tmp/grpcurl ./cmd/grpcurl
   )
-  chmod +x /tmp/grpcurl
-  chown root:root /tmp/grpcurl
 }
 
-get_fortio() {
-  VERSION=${FORTIO_VERSION#v}
-  retry clone_repo https://github.com/fortio/fortio.git "v${VERSION}" /tmp/fortio-src
+build_fortio() {
+  retry clone_repo \
+    https://github.com/fortio/fortio.git \
+    "v${FORTIO_VERSION#v}" \
+    /tmp/fortio-src
+
   (
     cd /tmp/fortio-src
-    retry go get -u=patch .
+    retry timeout 600 go get -u=patch .
     go mod edit \
       -require=golang.org/x/image@v0.45.0 \
       -require=golang.org/x/crypto@v0.56.0 \
       -require=google.golang.org/grpc@v1.83.2 \
       -require=golang.org/x/text@v0.42.0
-    retry go mod download
-    retry env CGO_ENABLED=0 go build -mod=mod -trimpath -ldflags="-s -w -buildid=" -o /tmp/fortio .
+    retry timeout 600 go mod download
+    git update-index --assume-unchanged go.mod go.sum
+    retry timeout 600 env CGO_ENABLED=0 go build \
+      -mod=mod -trimpath -ldflags="-s -w -buildid=" \
+      -o /tmp/fortio .
   )
-  chmod +x /tmp/fortio
-  chown root:root /tmp/fortio
 }
 
-get_grpcurl
-get_fortio
-
+build_grpcurl
+build_fortio
+chmod 0755 /tmp/grpcurl /tmp/fortio
+chown root:root /tmp/grpcurl /tmp/fortio

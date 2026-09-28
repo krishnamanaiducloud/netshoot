@@ -4,20 +4,13 @@ ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:81cdf3facd4aa954fa208b80791
 FROM ${GO_IMAGE} AS fetcher
 USER root
 COPY build/fetch_binaries.sh /tmp/fetch_binaries.sh
-RUN sed -i 's/\r$//' /tmp/fetch_binaries.sh
-
-RUN apk add --upgrade --no-cache \
-    bash \
-    ca-certificates \
-    curl \
-    git \
-    wget
-
-RUN /tmp/fetch_binaries.sh
+RUN sed -i 's/\r$//' /tmp/fetch_binaries.sh \
+    && /tmp/fetch_binaries.sh \
+    && rm -rf /root/go /root/.cache/go-build /tmp/grpcurl-src /tmp/fortio-src
 
 FROM ${ALPINE_IMAGE}
 
-ARG ALPINE_PACKAGE_REFRESH=2026-09-16
+ARG ALPINE_PACKAGE_REFRESH=2026-09-27
 ARG OH_MY_ZSH_COMMIT=b54a71977574cfcf659cc2f15a5e6422f17a8da7
 ARG ZSH_AUTOSUGGESTIONS_COMMIT=85919cd1ffa7d2d5412f6d3fe437ebdbeeec4fc5
 ARG POWERLEVEL10K_COMMIT=3308262dfbd743b6e1d3956a2b5572f7a049d692
@@ -101,24 +94,27 @@ ENV HOSTNAME=netshoot
 
 # ZSH Themes
 RUN set -eux; \
-    git init /root/.oh-my-zsh; \
-    cd /root/.oh-my-zsh; \
-    git remote add origin https://github.com/ohmyzsh/ohmyzsh.git; \
-    git fetch --depth=1 origin "${OH_MY_ZSH_COMMIT}"; \
-    git checkout --detach FETCH_HEAD; \
-    rm -rf .git; \
-    git init /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions; \
-    cd /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions; \
-    git remote add origin https://github.com/zsh-users/zsh-autosuggestions.git; \
-    git fetch --depth=1 origin "${ZSH_AUTOSUGGESTIONS_COMMIT}"; \
-    git checkout --detach FETCH_HEAD; \
-    rm -rf .git; \
-    git init /root/.oh-my-zsh/custom/themes/powerlevel10k; \
-    cd /root/.oh-my-zsh/custom/themes/powerlevel10k; \
-    git remote add origin https://github.com/romkatv/powerlevel10k.git; \
-    git fetch --depth=1 origin "${POWERLEVEL10K_COMMIT}"; \
-    git checkout --detach FETCH_HEAD; \
-    rm -rf .git; \
+    mkdir -p \
+      /root/.oh-my-zsh \
+      /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions \
+      /root/.oh-my-zsh/custom/themes/powerlevel10k; \
+    curl --fail --location --silent --show-error --retry 5 --retry-all-errors \
+      --retry-delay 5 --connect-timeout 20 --max-time 300 \
+      --output /tmp/oh-my-zsh.tar.gz \
+      "https://github.com/ohmyzsh/ohmyzsh/archive/${OH_MY_ZSH_COMMIT}.tar.gz"; \
+    tar -xzf /tmp/oh-my-zsh.tar.gz --strip-components=1 -C /root/.oh-my-zsh; \
+    curl --fail --location --silent --show-error --retry 5 --retry-all-errors \
+      --retry-delay 5 --connect-timeout 20 --max-time 300 \
+      --output /tmp/zsh-autosuggestions.tar.gz \
+      "https://github.com/zsh-users/zsh-autosuggestions/archive/${ZSH_AUTOSUGGESTIONS_COMMIT}.tar.gz"; \
+    tar -xzf /tmp/zsh-autosuggestions.tar.gz --strip-components=1 \
+      -C /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions; \
+    curl --fail --location --silent --show-error --retry 5 --retry-all-errors \
+      --retry-delay 5 --connect-timeout 20 --max-time 300 \
+      --output /tmp/powerlevel10k.tar.gz \
+      "https://github.com/romkatv/powerlevel10k/archive/${POWERLEVEL10K_COMMIT}.tar.gz"; \
+    tar -xzf /tmp/powerlevel10k.tar.gz --strip-components=1 \
+      -C /root/.oh-my-zsh/custom/themes/powerlevel10k; \
     for plugin in /root/.oh-my-zsh/plugins/*; do \
       case "$(basename "$plugin")" in \
         docker|git|jsontools|macports|node|sudo|web-search|yarn) ;; \
@@ -128,7 +124,10 @@ RUN set -eux; \
     rm -rf \
       /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions/Gemfile.lock \
       /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions/spec \
-      /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions/test
+      /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions/test \
+      /tmp/oh-my-zsh.tar.gz \
+      /tmp/zsh-autosuggestions.tar.gz \
+      /tmp/powerlevel10k.tar.gz
 COPY zshrc .zshrc
 COPY motd motd
 
