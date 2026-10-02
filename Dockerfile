@@ -1,5 +1,5 @@
-ARG ALPINE_IMAGE=alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
-ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:21b175db480c45f8edd504d1a9bf80cc15f6026b2f427b0c03822c00a9dbb95b
+ARG ALPINE_IMAGE=alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:6545de479116e822ad0dc48b582dd60ab70ea8ce9334306070ac807301f3722e
 
 FROM ${GO_IMAGE} AS fetcher
 USER root
@@ -10,14 +10,16 @@ RUN sed -i 's/\r$//' /tmp/fetch_binaries.sh \
 
 FROM ${ALPINE_IMAGE}
 
-ARG ALPINE_PACKAGE_REFRESH=2026-09-29
+ARG ALPINE_PACKAGE_REFRESH=2026-10-02
 ARG OH_MY_ZSH_COMMIT=b54a71977574cfcf659cc2f15a5e6422f17a8da7
 ARG ZSH_AUTOSUGGESTIONS_COMMIT=85919cd1ffa7d2d5412f6d3fe437ebdbeeec4fc5
 ARG POWERLEVEL10K_COMMIT=3308262dfbd743b6e1d3956a2b5572f7a049d692
 
+# Keep the base and general package set on stable Alpine 3.24. The three
+# explicit edge exceptions below are version-pinned security/tool updates.
 RUN set -ex \
     && echo "Refreshing Alpine packages for ${ALPINE_PACKAGE_REFRESH}" \
-    && apk add --upgrade --no-cache \
+    && apk --timeout 60 add --upgrade --no-cache \
     apache2-utils \
     bash \
     bind-tools \
@@ -63,7 +65,6 @@ RUN set -ex \
     strace \
     tcpdump \
     tcptraceroute \
-    tshark \
     util-linux \
     vim \
     git \
@@ -71,14 +72,15 @@ RUN set -ex \
     websocat \
     perl-crypt-ssleay \
     perl-net-ssleay \
-    && apk add --upgrade --no-cache \
+    && apk --timeout 60 add --no-cache \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
+      py3-urllib3=2.8.0-r0 \
+    && apk --timeout 60 add --no-cache \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
+      tshark=4.6.9-r0 \
+      wireshark-common=4.6.9-r0 \
+    && apk --timeout 60 add --no-cache \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
-      apache2-utils \
-      bind-tools \
-      c-ares \
-      libssh \
       swaks
 
 # Installing grpcurl
@@ -122,6 +124,7 @@ RUN set -eux; \
       esac; \
     done; \
     rm -rf \
+      /root/.oh-my-zsh/.github \
       /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions/Gemfile.lock \
       /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions/spec \
       /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions/test \
