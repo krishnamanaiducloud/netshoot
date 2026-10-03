@@ -11,12 +11,17 @@ RUN sed -i 's/\r$//' /tmp/fetch_binaries.sh \
 FROM ${ALPINE_IMAGE}
 
 ARG ALPINE_PACKAGE_REFRESH=2026-10-02
+ARG PIP_VERSION=26.2.1
+ARG HTTPIE_VERSION=3.2.4
 ARG OH_MY_ZSH_COMMIT=b54a71977574cfcf659cc2f15a5e6422f17a8da7
 ARG ZSH_AUTOSUGGESTIONS_COMMIT=85919cd1ffa7d2d5412f6d3fe437ebdbeeec4fc5
 ARG POWERLEVEL10K_COMMIT=3308262dfbd743b6e1d3956a2b5572f7a049d692
 
-# Keep the base and general package set on stable Alpine 3.24. The three
-# explicit edge exceptions below are version-pinned security/tool updates.
+ENV PATH=/opt/netshoot/bin:$PATH \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Keep the base and general package set on stable Alpine 3.24. The explicit
+# edge exceptions below are version-pinned security/tool updates.
 RUN set -ex \
     && echo "Refreshing Alpine packages for ${ALPINE_PACKAGE_REFRESH}" \
     && apk --timeout 60 add --upgrade --no-cache \
@@ -56,7 +61,6 @@ RUN set -ex \
     nmap-nping \
     nmap-scripts \
     openssl \
-    py3-pip \
     py3-setuptools \
     scapy \
     socat \
@@ -81,7 +85,26 @@ RUN set -ex \
       wireshark-common=4.6.9-r0 \
     && apk --timeout 60 add --no-cache \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
-      swaks
+      swaks \
+    && python3 -m venv --system-site-packages --without-pip /opt/netshoot \
+    && python3 -m pip --python /opt/netshoot install \
+      --no-cache-dir \
+      --only-binary=:all: \
+      --ignore-installed \
+      "pip==${PIP_VERSION}" \
+      "httpie==${HTTPIE_VERSION}" \
+    && apk --no-network del httpie \
+    && /opt/netshoot/bin/python -m pip --version \
+    && /opt/netshoot/bin/http --version \
+    && ! apk info -e py3-pip
+
+ARG BUSYBOX_VERSION=1.38.0-r7
+RUN apk --timeout 60 add --no-cache \
+      --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
+      busybox=${BUSYBOX_VERSION} \
+      busybox-binsh=${BUSYBOX_VERSION} \
+      busybox-extras=${BUSYBOX_VERSION} \
+      ssl_client=${BUSYBOX_VERSION}
 
 # Installing grpcurl
 COPY --from=fetcher /tmp/grpcurl /usr/local/bin/grpcurl
