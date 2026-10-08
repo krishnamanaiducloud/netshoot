@@ -342,6 +342,44 @@ swaks \
 
 ## Contributing
 
+### Versioned security refresh
+
+The `v18` image keeps Alpine 3.24.2 and refreshes packages from its stable
+repositories, retaining the existing explicitly pinned edge-package updates.
+It uses musl, not glibc: a glibc package revision such as `2.44-r8` does not
+apply to this runtime, and installing an unrelated libc would not upgrade
+the libraries used by its Alpine tools. Go utilities are built with Go
+1.27.1 and updated stable gRPC, crypto, and image dependencies. Python pip
+26.2.1 and HTTPie 3.2.4 remain the current stable upstream releases.
+
+The upstream pip 26.2.1 wheel still bundles urllib3 2.7.0 and msgpack 1.1.2,
+independently of the patched packages imported by HTTPie. The image now installs
+Chainguard's security-patched pure-Python pip wheel from a digest-pinned build
+stage. Its vendored urllib3 2.8.0 and msgpack 1.2.1 are checked during the build.
+Only the wheel is copied; Wolfi executables and glibc libraries are not copied.
+The wheel SHA-256 is
+`35d5db29026f3baff9de66ccb10b9b588a7c3dbd9d76715e94e4c41282d2ee77`.
+
+This does not establish a zero-finding image. The distribution wheel retains
+the upstream embedded SBOM, which still identifies the previous urllib3 and
+msgpack versions; actual module versions and SBOM claims must be distinguished
+when reviewing scanner output. It also retains pip's legacy vendored
+`pkg_resources` from setuptools 70.3.0, while the separately installed
+setuptools is 84.0.0. No scanner suppression, vulnerability exception, or SBOM
+removal is applied. A scanner finding for `GO-2026-5932` has no fixed
+`golang.org/x/crypto` release; it concerns the deprecated OpenPGP packages and
+requires package/symbol reachability review rather than a version-only claim.
+The grpcurl v1.9.4 source import graph, resolved with the dependency versions
+recorded in the released executable and its Linux/amd64/CGO-disabled settings,
+does not import `golang.org/x/crypto/openpgp` or its subpackages. The module-level
+scanner alert is retained and disclosed; it is not suppressed.
+The published `v17` image is not overwritten by this correction.
+
+Scapy is deliberately retained as a packet-diagnostics tool. Its GPL license
+policy finding is distinct from vulnerability remediation. This image is
+itself a debugging toolbox; there is no separate reduced-production/debug
+Dockerfile pair. Publish only versioned image tags, never `latest`.
+
 PRs are welcome. Before opening one:
 
 - Explain why the tool isn't redundant with something already in the image

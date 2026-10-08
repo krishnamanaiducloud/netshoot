@@ -11,37 +11,40 @@ jobs:
     steps:
       -
         name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.ref }}
       -
         name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
+        uses: docker/setup-qemu-action@v4.4.0
         with:
           platforms: arm64,amd64
       -
         name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@v4.4.1
       -
         name: Available platforms
         run: echo ${{ steps.buildx.outputs.platforms }}
       - name: Set Release Tag Env
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+        run: |
+          release_version="${GITHUB_REF#refs/tags/}"
+          [[ "$release_version" =~ ^v[0-9]+(\.[0-9]+)*$ ]]
+          printf 'RELEASE_VERSION=%s\n' "$release_version" >> "$GITHUB_ENV"
       - 
         name: docker hub login
         env:
           DOCKER_USER: ${{secrets.DOCKER_USER}}
           DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
         run: |
-            docker login -u $DOCKER_USER -p $DOCKER_PASSWORD 
+            printf '%s' "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin
       - 
         name: docker ghcr login
         env:
           GHCR_USER: ${{secrets.GHCR_USER}}
           GHCR_TOKEN: ${{secrets.GHCR_TOKEN}}
         run: |
-            docker login ghcr.io -u $GHCR_USER -p $GHCR_TOKEN
+            printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GHCR_USER" --password-stdin
       -
         name: Run Buildx
         run: |
@@ -49,12 +52,8 @@ jobs:
             --platform linux/amd64,linux/arm64 \
             --output "type=image,push=true" \
             --file ./Dockerfile \
-            --tag $GITHUB_REPOSITORY:$GITHUB_SHA \
-            --tag $GITHUB_REPOSITORY:$RELEASE_VERSION \
-            --tag $GITHUB_REPOSITORY:latest \
-            --tag ghcr.io/$GITHUB_REPOSITORY:$GITHUB_SHA \
-            --tag ghcr.io/$GITHUB_REPOSITORY:$RELEASE_VERSION \
-            --tag ghcr.io/$GITHUB_REPOSITORY:latest . 
+            --tag mohankrishna999/netshoot:$RELEASE_VERSION \
+            --tag ghcr.io/$GITHUB_REPOSITORY:$RELEASE_VERSION .
 
 
             

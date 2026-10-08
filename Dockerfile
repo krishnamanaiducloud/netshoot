@@ -1,5 +1,6 @@
 ARG ALPINE_IMAGE=alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
-ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:6545de479116e822ad0dc48b582dd60ab70ea8ce9334306070ac807301f3722e
+ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:1e5b0977fb7db0d314b2b91faad65b35e2b137242f2d9f34ff5eb4e30a47772f
+ARG PYTHON_IMAGE=cgr.dev/chainguard/python:latest-dev@sha256:630df1be3733f7b38d1b535872904248adfe23fbea4befcb08da47cb7436ddb2
 
 FROM ${GO_IMAGE} AS fetcher
 USER root
@@ -8,9 +9,17 @@ RUN sed -i 's/\r$//' /tmp/fetch_binaries.sh \
     && /tmp/fetch_binaries.sh \
     && rm -rf /root/go /root/.cache/go-build /tmp/grpcurl-src /tmp/fortio-src
 
+FROM ${PYTHON_IMAGE} AS pip-wheel
+USER root
+# Use the security-patched, pure-Python distribution wheel. No Wolfi/glibc
+# executables or libraries are copied into the Alpine runtime.
+RUN test -r /usr/share/python-wheels/pip-26.2.1-py3-none-any.whl
+
 FROM ${ALPINE_IMAGE}
 
-ARG ALPINE_PACKAGE_REFRESH=2026-10-02
+LABEL org.opencontainers.image.version="v18"
+
+ARG ALPINE_PACKAGE_REFRESH=2026-10-07
 ARG PIP_VERSION=26.2.1
 ARG HTTPIE_VERSION=3.2.4
 ARG OH_MY_ZSH_COMMIT=b54a71977574cfcf659cc2f15a5e6422f17a8da7
@@ -19,6 +28,8 @@ ARG POWERLEVEL10K_COMMIT=3308262dfbd743b6e1d3956a2b5572f7a049d692
 
 ENV PATH=/opt/netshoot/bin:$PATH \
     PIP_DISABLE_PIP_VERSION_CHECK=1
+
+COPY --from=pip-wheel /usr/share/python-wheels/pip-${PIP_VERSION}-py3-none-any.whl /tmp/python-wheels/
 
 # Keep the base and general package set on stable Alpine 3.24. The explicit
 # edge exceptions below are version-pinned security/tool updates.
@@ -91,12 +102,18 @@ RUN set -ex \
       --no-cache-dir \
       --only-binary=:all: \
       --ignore-installed \
-      "pip==${PIP_VERSION}" \
+      "/tmp/python-wheels/pip-${PIP_VERSION}-py3-none-any.whl" \
       "httpie==${HTTPIE_VERSION}" \
+    && rm "/tmp/python-wheels/pip-${PIP_VERSION}-py3-none-any.whl" \
+    && rmdir /tmp/python-wheels \
     && apk --no-network del httpie \
     && /opt/netshoot/bin/python -m pip --version \
+    && /opt/netshoot/bin/python -c 'from pip._vendor import urllib3, msgpack; assert tuple(map(int, urllib3.__version__.split("."))) >= (2, 8, 0); assert tuple(map(int, msgpack.__version__.split("."))) >= (1, 2, 1); print("Patched pip vendored urllib3", urllib3.__version__, "msgpack", msgpack.__version__)' \
     && /opt/netshoot/bin/http --version \
-    && ! apk info -e py3-pip
+    && apk_db=/usr/lib/apk/db/installed \
+    && if [ ! -r "${apk_db}" ]; then apk_db=/lib/apk/db/installed; fi \
+    && test -r "${apk_db}" \
+    && awk '$0 == "P:py3-pip" {exit 1}' "${apk_db}"
 
 ARG BUSYBOX_VERSION=1.38.0-r7
 RUN apk --timeout 60 add --no-cache \

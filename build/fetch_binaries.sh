@@ -45,16 +45,16 @@ build_grpcurl() {
     cd /tmp/grpcurl-src
     retry timeout 600 go get -u=patch ./cmd/grpcurl
     go mod edit \
-      -require=google.golang.org/grpc@v1.83.2 \
+      -require=google.golang.org/grpc@v1.84.0 \
       -require=google.golang.org/protobuf@v1.36.12 \
       -require=github.com/go-jose/go-jose/v4@v4.1.5 \
-      -require=golang.org/x/crypto@v0.56.0 \
+      -require=golang.org/x/crypto@v0.57.0 \
       -require=golang.org/x/net@v0.59.0 \
       -require=golang.org/x/sys@v0.48.0 \
       -require=golang.org/x/text@v0.42.0
     retry timeout 600 go mod download
-    retry timeout 600 env CGO_ENABLED=0 go build \
-      -mod=mod -trimpath \
+    retry timeout 600 env CGO_ENABLED=0 GOMAXPROCS=2 go build \
+      -p=2 -mod=mod -trimpath \
       -ldflags="-s -w -buildid= -X main.version=${GRPCURL_VERSION#v}" \
       -o /tmp/grpcurl ./cmd/grpcurl
   )
@@ -70,14 +70,14 @@ build_fortio() {
     cd /tmp/fortio-src
     retry timeout 600 go get -u=patch .
     go mod edit \
-      -require=golang.org/x/image@v0.45.0 \
-      -require=golang.org/x/crypto@v0.56.0 \
-      -require=google.golang.org/grpc@v1.83.2 \
+      -require=golang.org/x/image@v0.46.0 \
+      -require=golang.org/x/crypto@v0.57.0 \
+      -require=google.golang.org/grpc@v1.84.0 \
       -require=golang.org/x/text@v0.42.0
     retry timeout 600 go mod download
     git update-index --assume-unchanged go.mod go.sum
-    retry timeout 600 env CGO_ENABLED=0 go build \
-      -mod=mod -trimpath -ldflags="-s -w -buildid=" \
+    retry timeout 600 env CGO_ENABLED=0 GOMAXPROCS=2 go build \
+      -p=2 -mod=mod -trimpath -ldflags="-s -w -buildid=" \
       -o /tmp/fortio .
   )
 }

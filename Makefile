@@ -1,8 +1,8 @@
 .PHONY: build-x86 build-arm64 push all
 
 # Build Vars
-IMAGENAME=nicolaka/netshoot
-VERSION=0.1
+IMAGENAME=mohankrishna999/netshoot
+VERSION=v18
 
 
 .DEFAULT_GOAL := all
