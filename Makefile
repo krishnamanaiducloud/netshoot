@@ -2,7 +2,7 @@
 
 # Build Vars
 IMAGENAME=mohankrishna999/netshoot
-VERSION=v18
+VERSION=v19
 
 
 .DEFAULT_GOAL := all

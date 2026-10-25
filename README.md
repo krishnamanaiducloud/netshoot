@@ -344,21 +344,21 @@ swaks \
 
 ### Versioned security refresh
 
-The `v18` image keeps Alpine 3.24.2 and refreshes packages from its stable
+The `v19` image moves to Alpine 3.24.3 and refreshes packages from its stable
 repositories, retaining the existing explicitly pinned edge-package updates.
 It uses musl, not glibc: a glibc package revision such as `2.44-r8` does not
 apply to this runtime, and installing an unrelated libc would not upgrade
 the libraries used by its Alpine tools. Go utilities are built with Go
-1.27.1 and updated stable gRPC, crypto, and image dependencies. Python pip
-26.2.1 and HTTPie 3.2.4 remain the current stable upstream releases.
+1.27.3; fortio moves to 1.76.0, and gRPC, go-jose, crypto, net, sys, text and
+image dependencies use their current stable releases. Python pip 26.2.2 and
+HTTPie 3.2.4 are the current stable upstream releases.
 
-The upstream pip 26.2.1 wheel still bundles urllib3 2.7.0 and msgpack 1.1.2,
-independently of the patched packages imported by HTTPie. The image now installs
-Chainguard's security-patched pure-Python pip wheel from a digest-pinned build
-stage. Its vendored urllib3 2.8.0 and msgpack 1.2.1 are checked during the build.
+The image installs Chainguard's security-patched pure-Python pip 26.2.2 wheel
+from a digest-pinned build stage, independently of the patched packages imported
+by HTTPie. Its vendored urllib3 2.8.0 and msgpack 1.2.1 are checked during the build.
 Only the wheel is copied; Wolfi executables and glibc libraries are not copied.
 The wheel SHA-256 is
-`35d5db29026f3baff9de66ccb10b9b588a7c3dbd9d76715e94e4c41282d2ee77`.
+`d7c8b412afc31221b27a66441bd330594e555d2ed322a07fb36e2495f8fc6f5f`.
 
 This does not establish a zero-finding image. The distribution wheel retains
 the upstream embedded SBOM, which still identifies the previous urllib3 and

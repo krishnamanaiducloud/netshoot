@@ -1,6 +1,6 @@
-ARG ALPINE_IMAGE=alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
-ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:1e5b0977fb7db0d314b2b91faad65b35e2b137242f2d9f34ff5eb4e30a47772f
-ARG PYTHON_IMAGE=cgr.dev/chainguard/python:latest-dev@sha256:630df1be3733f7b38d1b535872904248adfe23fbea4befcb08da47cb7436ddb2
+ARG ALPINE_IMAGE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:6935d7096121c0a0ce4c26192c40bc7ed4ae9076d2567e6d46d6c32817934aff
+ARG PYTHON_IMAGE=cgr.dev/chainguard/python:latest-dev@sha256:c179c7d8e23caed59a51ff74d4742f8f8d3f16af4c33c40acaf8d3ee07234592
 
 FROM ${GO_IMAGE} AS fetcher
 USER root
@@ -13,14 +13,14 @@ FROM ${PYTHON_IMAGE} AS pip-wheel
 USER root
 # Use the security-patched, pure-Python distribution wheel. No Wolfi/glibc
 # executables or libraries are copied into the Alpine runtime.
-RUN test -r /usr/share/python-wheels/pip-26.2.1-py3-none-any.whl
+RUN test -r /usr/share/python-wheels/pip-26.2.2-py3-none-any.whl
 
 FROM ${ALPINE_IMAGE}
 
-LABEL org.opencontainers.image.version="v18"
+LABEL org.opencontainers.image.version="v19"
 
-ARG ALPINE_PACKAGE_REFRESH=2026-10-07
-ARG PIP_VERSION=26.2.1
+ARG ALPINE_PACKAGE_REFRESH=2026-10-24
+ARG PIP_VERSION=26.2.2
 ARG HTTPIE_VERSION=3.2.4
 ARG OH_MY_ZSH_COMMIT=b54a71977574cfcf659cc2f15a5e6422f17a8da7
 ARG ZSH_AUTOSUGGESTIONS_COMMIT=85919cd1ffa7d2d5412f6d3fe437ebdbeeec4fc5
