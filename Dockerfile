@@ -115,7 +115,7 @@ RUN set -ex \
     && test -r "${apk_db}" \
     && awk '$0 == "P:py3-pip" {exit 1}' "${apk_db}"
 
-ARG BUSYBOX_VERSION=1.38.0-r7
+ARG BUSYBOX_VERSION=1.38.0-r8
 RUN apk --timeout 60 add --no-cache \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
       busybox=${BUSYBOX_VERSION} \
