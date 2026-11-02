@@ -365,7 +365,7 @@ the upstream embedded SBOM, which still identifies the previous urllib3 and
 msgpack versions; actual module versions and SBOM claims must be distinguished
 when reviewing scanner output. It also retains pip's legacy vendored
 `pkg_resources` from setuptools 70.3.0, while the separately installed
-setuptools is 84.0.0. No scanner suppression, vulnerability exception, or SBOM
+setuptools is 84.2.1. No scanner suppression, vulnerability exception, or SBOM
 removal is applied. A scanner finding for `GO-2026-5932` has no fixed
 `golang.org/x/crypto` release; it concerns the deprecated OpenPGP packages and
 requires package/symbol reachability review rather than a version-only claim.
