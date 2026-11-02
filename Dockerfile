@@ -1,6 +1,6 @@
 ARG ALPINE_IMAGE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
-ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:6935d7096121c0a0ce4c26192c40bc7ed4ae9076d2567e6d46d6c32817934aff
-ARG PYTHON_IMAGE=cgr.dev/chainguard/python:latest-dev@sha256:c179c7d8e23caed59a51ff74d4742f8f8d3f16af4c33c40acaf8d3ee07234592
+ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:c33b2ae1b183ff001b7f2c29936c587ce1cd4ffaf9efb031bd81240f16a96504
+ARG PYTHON_IMAGE=cgr.dev/chainguard/python:latest-dev@sha256:8a5780972067cfba4592b10e786a889807ed876c1100f89410fd0ed4e398992c
 
 FROM ${GO_IMAGE} AS fetcher
 USER root
@@ -17,7 +17,7 @@ RUN test -r /usr/share/python-wheels/pip-26.2.2-py3-none-any.whl
 
 FROM ${ALPINE_IMAGE}
 
-LABEL org.opencontainers.image.version="v19"
+LABEL org.opencontainers.image.version="v20"
 
 ARG ALPINE_PACKAGE_REFRESH=2026-10-24
 ARG PIP_VERSION=26.2.2

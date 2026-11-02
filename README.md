@@ -344,7 +344,7 @@ swaks \
 
 ### Versioned security refresh
 
-The `v19` image moves to Alpine 3.24.3 and refreshes packages from its stable
+The `v20` image moves to Alpine 3.24.3 and refreshes packages from its stable
 repositories, retaining the existing explicitly pinned edge-package updates.
 It uses musl, not glibc: a glibc package revision such as `2.44-r8` does not
 apply to this runtime, and installing an unrelated libc would not upgrade
