@@ -1,6 +1,6 @@
 ARG ALPINE_IMAGE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
-ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:c33b2ae1b183ff001b7f2c29936c587ce1cd4ffaf9efb031bd81240f16a96504
-ARG PYTHON_IMAGE=cgr.dev/chainguard/python:latest-dev@sha256:8a5780972067cfba4592b10e786a889807ed876c1100f89410fd0ed4e398992c
+ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:ed70318f7b4f2e4a82e1dbc363f7a13be3a5805081f86ed9d1ec02d2694c222f
+ARG PYTHON_IMAGE=cgr.dev/chainguard/python:latest-dev@sha256:fe4dbb574f811d271ac002a3e0270659f69841738276ef2d0084323baf1d75df
 
 FROM ${GO_IMAGE} AS fetcher
 USER root
@@ -19,7 +19,7 @@ FROM ${ALPINE_IMAGE}
 
 LABEL org.opencontainers.image.version="v20"
 
-ARG ALPINE_PACKAGE_REFRESH=2026-10-24
+ARG ALPINE_PACKAGE_REFRESH=2026-11-06
 ARG PIP_VERSION=26.2.2
 ARG HTTPIE_VERSION=3.2.4
 ARG OH_MY_ZSH_COMMIT=b54a71977574cfcf659cc2f15a5e6422f17a8da7
@@ -41,7 +41,10 @@ RUN set -ex \
     bind-tools \
     bird \
     bridge-utils \
+    busybox \
+    busybox-binsh \
     busybox-extras \
+    ssl_client \
     conntrack-tools \
     curl \
     dhcping \
@@ -72,7 +75,6 @@ RUN set -ex \
     nmap-nping \
     nmap-scripts \
     openssl \
-    py3-setuptools \
     scapy \
     socat \
     speedtest-cli \
@@ -90,6 +92,12 @@ RUN set -ex \
     && apk --timeout 60 add --no-cache \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
       py3-urllib3=2.8.0-r0 \
+      sqlite-libs=3.54.1-r0 \
+      glib=2.90.0-r0 \
+      nmap=7.992-r0 \
+      nmap-nping=7.992-r0 \
+      nmap-scripts=7.992-r0 \
+      nmap-nselibs=7.992-r0 \
     && apk --timeout 60 add --no-cache \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
       tshark=4.6.9-r0 \
@@ -107,6 +115,7 @@ RUN set -ex \
     && rm "/tmp/python-wheels/pip-${PIP_VERSION}-py3-none-any.whl" \
     && rmdir /tmp/python-wheels \
     && apk --no-network del httpie \
+    && test -z "$(apk info -e py3-setuptools 2>/dev/null)" \
     && /opt/netshoot/bin/python -m pip --version \
     && /opt/netshoot/bin/python -c 'from pip._vendor import urllib3, msgpack; assert tuple(map(int, urllib3.__version__.split("."))) >= (2, 8, 0); assert tuple(map(int, msgpack.__version__.split("."))) >= (1, 2, 1); print("Patched pip vendored urllib3", urllib3.__version__, "msgpack", msgpack.__version__)' \
     && /opt/netshoot/bin/http --version \
@@ -114,14 +123,6 @@ RUN set -ex \
     && if [ ! -r "${apk_db}" ]; then apk_db=/lib/apk/db/installed; fi \
     && test -r "${apk_db}" \
     && awk '$0 == "P:py3-pip" {exit 1}' "${apk_db}"
-
-ARG BUSYBOX_VERSION=1.38.0-r8
-RUN apk --timeout 60 add --no-cache \
-      --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
-      busybox=${BUSYBOX_VERSION} \
-      busybox-binsh=${BUSYBOX_VERSION} \
-      busybox-extras=${BUSYBOX_VERSION} \
-      ssl_client=${BUSYBOX_VERSION}
 
 # Installing grpcurl
 COPY --from=fetcher /tmp/grpcurl /usr/local/bin/grpcurl

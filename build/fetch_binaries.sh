@@ -45,10 +45,10 @@ build_grpcurl() {
     cd /tmp/grpcurl-src
     retry timeout 600 go get -u=patch ./cmd/grpcurl
     go mod edit \
-      -require=google.golang.org/grpc@v1.84.0 \
+      -require=google.golang.org/grpc@v1.85.0 \
       -require=google.golang.org/protobuf@v1.36.12 \
-      -require=github.com/go-jose/go-jose/v4@v4.1.6 \
-      -require=golang.org/x/crypto@v0.58.0 \
+      -require=github.com/go-jose/go-jose/v4@v4.1.9 \
+      -require=golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2 \
       -require=golang.org/x/net@v0.62.0 \
       -require=golang.org/x/sys@v0.49.0 \
       -require=golang.org/x/text@v0.43.0
@@ -71,9 +71,9 @@ build_fortio() {
     retry timeout 600 go get -u=patch .
     go mod edit \
       -require=golang.org/x/image@v0.47.0 \
-      -require=golang.org/x/crypto@v0.58.0 \
+      -require=golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2 \
       -require=golang.org/x/net@v0.62.0 \
-      -require=google.golang.org/grpc@v1.84.0 \
+      -require=google.golang.org/grpc@v1.85.0 \
       -require=golang.org/x/text@v0.43.0
     retry timeout 600 go mod download
     git update-index --assume-unchanged go.mod go.sum

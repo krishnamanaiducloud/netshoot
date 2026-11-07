@@ -344,14 +344,39 @@ swaks \
 
 ### Versioned security refresh
 
-The `v20` image moves to Alpine 3.24.3 and refreshes packages from its stable
-repositories, retaining the existing explicitly pinned edge-package updates.
-It uses musl, not glibc: a glibc package revision such as `2.44-r8` does not
-apply to this runtime, and installing an unrelated libc would not upgrade
-the libraries used by its Alpine tools. Go utilities are built with Go
-1.27.3; fortio moves to 1.76.0, and gRPC, go-jose, crypto, net, sys, text and
-image dependencies use their current stable releases. Python pip 26.2.2 and
-HTTPie 3.2.4 are the current stable upstream releases.
+The `v20` image is built on Alpine 3.24.3 with packages refreshed from its stable
+repositories on 2026-11-06, including perl 5.42.3 and OpenSSH 10.3_p1-r2. It uses
+musl, not glibc: a glibc package revision such as `2.44-r8` does not apply to this
+runtime, and installing an unrelated libc would not upgrade the libraries used by
+its Alpine tools.
+
+A few packages come from Alpine edge, each pinned to an exact version, because
+Alpine 3.24 has no fixed build yet:
+
+| Package | Alpine 3.24 | `v20` (edge) | Why |
+|---|---|---|---|
+| `sqlite-libs` | 3.53.4 | 3.54.1 | 10 CVEs fixed in 3.54.0 |
+| `glib` | 2.88.1 | 2.90.0 | CVE-2026-58016 (critical), fixed in 2.89.0 |
+| `nmap`, `nmap-nping`, `nmap-scripts`, `nmap-nselibs` | 7.99 | 7.992 | CVE-2026-0011, CVE-2026-58058 |
+| `py3-urllib3` | | 2.8.0 | as in earlier releases |
+| `tshark`, `wireshark-common` | | 4.6.9 | as in earlier releases |
+| `swaks` | not packaged | edge/testing | as in earlier releases |
+
+BusyBox is back on Alpine 3.24's own build (1.37.0-r31). Edge's 1.38.0 matches three
+HIGH CVEs (CVE-2026-38753, -38754, -38755) with no fix released, while 3.24's build
+has one MEDIUM (CVE-2025-60876, no fix released). `py3-setuptools` is no longer
+installed: only Alpine's HTTPie package pulled it in, and that package is removed
+again once HTTPie is installed into `/opt/netshoot`; the build fails if it remains.
+
+Go utilities are built with Go 1.27.3: grpcurl 1.9.4 and fortio 1.76.0 (both the
+newest releases), with gRPC 1.85.0, go-jose 4.1.9, `golang.org/x/net` 0.62.0 and
+`golang.org/x/crypto` at the upstream fix for GO-2026-5932
+(`v0.58.1-0.20261009181718-2f1f834330b2`; no tagged release yet). Python pip 26.2.2
+and HTTPie 3.2.4 are the current stable upstream releases.
+
+Every bundled tool was run in `v20` and in the published `v19` (version or help
+output), together with an nmap scan with NSE scripts, a tshark interface list, a
+Scapy packet, a TLS request and a DNS query. None fails in `v20`.
 
 The image installs Chainguard's security-patched pure-Python pip 26.2.2 wheel
 from a digest-pinned build stage, independently of the patched packages imported
@@ -360,20 +385,25 @@ Only the wheel is copied; Wolfi executables and glibc libraries are not copied.
 The wheel SHA-256 is
 `d7c8b412afc31221b27a66441bd330594e555d2ed322a07fb36e2495f8fc6f5f`.
 
-This does not establish a zero-finding image. The distribution wheel retains
-the upstream embedded SBOM, which still identifies the previous urllib3 and
-msgpack versions; actual module versions and SBOM claims must be distinguished
-when reviewing scanner output. It also retains pip's legacy vendored
-`pkg_resources` from setuptools 70.3.0, while the separately installed
-setuptools is 84.2.1. No scanner suppression, vulnerability exception, or SBOM
-removal is applied. A scanner finding for `GO-2026-5932` has no fixed
-`golang.org/x/crypto` release; it concerns the deprecated OpenPGP packages and
-requires package/symbol reachability review rather than a version-only claim.
-The grpcurl v1.9.4 source import graph, resolved with the dependency versions
-recorded in the released executable and its Linux/amd64/CGO-disabled settings,
-does not import `golang.org/x/crypto/openpgp` or its subpackages. The module-level
-scanner alert is retained and disclosed; it is not suppressed.
-The published `v17` image is not overwritten by this correction.
+This does not establish a zero-finding image. No scanner suppression,
+vulnerability exception, or SBOM removal is applied. Remaining findings with
+Trivy 0.76.2 and Grype 0.121.1:
+
+| Package | Findings | Note |
+|---|---|---|
+| `setuptools` 70.3.0 (Trivy, 3) | CVE-2025-47273, CVE-2026-59890, GHSA-xmj3-9gf7-h52w | read from pip's embedded SBOM: pip vendors only `pkg_resources` from setuptools 70.3.0; the installed setuptools is 84.2.1 and pip 26.2.2 is the newest release |
+| `libssh2` 1.11.1 | 6 | no fixed release; every version matches |
+| `net-snmp` 5.9.5.2 | CVE-2026-89147 | no fixed release |
+| `sqlite-libs` 3.54.1 | CVE-2026-119586 | affects up to 3.54.1; no fixed release |
+| `python3` 3.14.10 | 3 | fixed only in Python 3.16 |
+| `busybox` 1.37.0 | CVE-2025-60876 | no fixed release (see above) |
+| `perl` 5.42.3 | CVE-2026-15534 | no fixed release |
+| `pixman` 0.46.4 | CVE-2023-37769 | disputed, every version matches |
+| `flock` (util-linux) | CVE-2010-1236, CVE-2010-3262 | false positive: these CVEs are for the Flock web browser |
+
+The distribution pip wheel also retains the upstream embedded SBOM, which still
+names the previous urllib3 and msgpack versions; the actual module versions are
+checked during the build.
 
 Scapy is deliberately retained as a packet-diagnostics tool. Its GPL license
 policy finding is distinct from vulnerability remediation. This image is
