@@ -17,7 +17,7 @@ RUN test -r /usr/share/python-wheels/pip-26.2.2-py3-none-any.whl
 
 FROM ${ALPINE_IMAGE}
 
-LABEL org.opencontainers.image.version="v20"
+LABEL org.opencontainers.image.version="v21"
 
 ARG ALPINE_PACKAGE_REFRESH=2026-11-06
 ARG PIP_VERSION=26.2.2
@@ -102,6 +102,7 @@ RUN set -ex \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
       tshark=4.6.9-r0 \
       wireshark-common=4.6.9-r0 \
+      scapy=2.8.0-r0 \
     && apk --timeout 60 add --no-cache \
       --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
       swaks \
@@ -119,6 +120,8 @@ RUN set -ex \
     && /opt/netshoot/bin/python -m pip --version \
     && /opt/netshoot/bin/python -c 'from pip._vendor import urllib3, msgpack; assert tuple(map(int, urllib3.__version__.split("."))) >= (2, 8, 0); assert tuple(map(int, msgpack.__version__.split("."))) >= (1, 2, 1); print("Patched pip vendored urllib3", urllib3.__version__, "msgpack", msgpack.__version__)' \
     && /opt/netshoot/bin/http --version \
+    && python3 -c 'import scapy; assert scapy.VERSION == "2.8.0", scapy.VERSION; print("scapy", scapy.VERSION)' \
+    && test -z "$(find /usr/lib/python3*/site-packages -maxdepth 1 -name 'scapy-2.7*' 2>/dev/null)" \
     && apk_db=/usr/lib/apk/db/installed \
     && if [ ! -r "${apk_db}" ]; then apk_db=/lib/apk/db/installed; fi \
     && test -r "${apk_db}" \

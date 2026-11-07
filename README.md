@@ -344,7 +344,11 @@ swaks \
 
 ### Versioned security refresh
 
-The `v20` image is built on Alpine 3.24.3 with packages refreshed from its stable
+The `v21` image is `v20` with Scapy 2.8.0: Alpine 3.24 ships Scapy 2.7.0, which has
+known vulnerabilities fixed in 2.8.0, so Scapy now comes from Alpine edge (built for the
+same Python 3.14). The build fails unless Scapy 2.8.0 is installed and no 2.7 copy remains.
+
+The image is built on Alpine 3.24.3 with packages refreshed from its stable
 repositories on 2026-11-06, including perl 5.42.3 and OpenSSH 10.3_p1-r2. It uses
 musl, not glibc: a glibc package revision such as `2.44-r8` does not apply to this
 runtime, and installing an unrelated libc would not upgrade the libraries used by
@@ -353,8 +357,9 @@ its Alpine tools.
 A few packages come from Alpine edge, each pinned to an exact version, because
 Alpine 3.24 has no fixed build yet:
 
-| Package | Alpine 3.24 | `v20` (edge) | Why |
+| Package | Alpine 3.24 | `v21` (edge) | Why |
 |---|---|---|---|
+| `scapy` | 2.7.0 | 2.8.0 | vulnerabilities fixed in 2.8.0 |
 | `sqlite-libs` | 3.53.4 | 3.54.1 | 10 CVEs fixed in 3.54.0 |
 | `glib` | 2.88.1 | 2.90.0 | CVE-2026-58016 (critical), fixed in 2.89.0 |
 | `nmap`, `nmap-nping`, `nmap-scripts`, `nmap-nselibs` | 7.99 | 7.992 | CVE-2026-0011, CVE-2026-58058 |
@@ -374,9 +379,9 @@ newest releases), with gRPC 1.85.0, go-jose 4.1.9, `golang.org/x/net` 0.62.0 and
 (`v0.58.1-0.20261009181718-2f1f834330b2`; no tagged release yet). Python pip 26.2.2
 and HTTPie 3.2.4 are the current stable upstream releases.
 
-Every bundled tool was run in `v20` and in the published `v19` (version or help
+Every bundled tool was run in `v21` and in the published `v20` (version or help
 output), together with an nmap scan with NSE scripts, a tshark interface list, a
-Scapy packet, a TLS request and a DNS query. None fails in `v20`.
+Scapy packet, a TLS request and a DNS query. None fails in `v21`.
 
 The image installs Chainguard's security-patched pure-Python pip 26.2.2 wheel
 from a digest-pinned build stage, independently of the patched packages imported
